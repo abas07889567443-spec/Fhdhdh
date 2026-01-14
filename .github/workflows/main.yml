@@ -1,0 +1,53 @@
+name: RDP
+
+on:
+  workflow_dispatch:
+
+jobs:
+  rdp:
+    runs-on: windows-latest
+    timeout-minutes: 360
+
+    steps:
+    - name: Enable RDP
+      run: |
+        Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+        Restart-Service TermService -Force
+
+    - name: Create User
+      run: |
+        $username = "TOOLBOLAP"
+        $password = "admin123"
+        $secure = ConvertTo-SecureString $password -AsPlainText -Force
+        New-LocalUser -Name $username -Password $secure -AccountNeverExpires
+        Add-LocalGroupMember -Group "Administrators" -Member $username
+        Add-LocalGroupMember -Group "Remote Desktop Users" -Member $username
+
+    - name: Install Tailscale
+      run: |
+        $url = "https://pkgs.tailscale.com/stable/tailscale-setup-1.60.0-amd64.msi"
+        $path = "$env:TEMP\tailscale.msi"
+        Invoke-WebRequest $url -OutFile $path
+        Start-Process msiexec.exe -ArgumentList "/i $path /quiet /norestart" -Wait
+
+    - name: Login Tailscale
+      env:
+        TS_AUTHKEY: ${{ secrets.TS_AUTHKEY }}
+      run: |
+        & "C:\Program Files\Tailscale\tailscale.exe" up --authkey=$env:TS_AUTHKEY --hostname=github-rdp
+
+    - name: Show RDP Info
+      run: |
+        tailscale ip -4
+        echo "===================="
+        echo "RDP READY"
+        echo "Username: TOOLBOLAP"
+        echo "Password: admin123"
+        echo "===================="
+
+    - name: Keep Alive
+      run: |
+        while ($true) {
+          Start-Sleep -Seconds 300
+        }
