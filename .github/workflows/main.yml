@@ -25,13 +25,7 @@ jobs:
           Remove-LocalUser -Name $username
         }
 
-        New-LocalUser `
-          -Name $username `
-          -Password $secure `
-          -AccountNeverExpires `
-          -PasswordNeverExpires `
-          -UserMayNotChangePassword
-
+        New-LocalUser -Name $username -Password $secure -AccountNeverExpires -PasswordNeverExpires
         Add-LocalGroupMember -Group "Administrators" -Member $username
         Add-LocalGroupMember -Group "Remote Desktop Users" -Member $username
 
@@ -50,13 +44,14 @@ jobs:
 
     - name: Show RDP Info
       run: |
-        $ip = tailscale ip -4
-        echo "=============================="
-        echo "RDP IS READY"
-        echo "IP: $ip"
-        echo "Username: TOOLBOLAP"
-        echo "Password: Admin@12345Aa"
-        echo "=============================="
+        $ts = "C:\Program Files\Tailscale\tailscale.exe"
+        $ip = & $ts ip -4
+        Write-Host "=============================="
+        Write-Host "RDP READY"
+        Write-Host "IP: $ip"
+        Write-Host "Username: TOOLBOLAP"
+        Write-Host "Password: Admin@12345Aa"
+        Write-Host "=============================="
 
     - name: Keep Alive
       run: |
